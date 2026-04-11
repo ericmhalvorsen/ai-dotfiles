@@ -1,0 +1,27 @@
+# ai-dotfiles
+
+# Local/personal overrides (not committed)
+*.local
+*.local.json
+*.local.toml
+*.local.md
+
+# Backup files created by install script
+*.backup.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node (if we add any JS tooling later)
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

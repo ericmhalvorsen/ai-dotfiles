@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Claude Code settings - edit this file to customize permissions, hooks, and MCP servers",
+  
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(pnpm run *)",
+      "Bash(yarn run *)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git log --oneline -10)",
+      "Read(./package.json)",
+      "Read(./README.md)",
+      "Read(./CLAUDE.md)",
+      "Read(./.ai/config.yaml)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Write(./.env*)"
+    ]
+  },
+  
+  "model": "claude-sonnet-4-5",
+  
+  "sandbox": {
+    "enabled": true,
+    "denyNetwork": false,
+    "denyFileWrite": false
+  },
+  
+  "hooks": {
+    "postEdit": [
+      {
+        "command": "npm run lint",
+        "condition": "test -f package.json"
+      },
+      {
+        "command": "npm run typecheck",
+        "condition": "test -f tsconfig.json"
+      }
+    ]
+  },
+  
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1"
+  }
+}
