@@ -1,0 +1,26 @@
+[features]
+multi_agent = true
+
+[model]
+default = "gpt-4o"
+
+[permissions]
+allow = [
+  "npm run *",
+  "pnpm run *", 
+  "yarn run *",
+  "git status",
+  "git diff",
+  "git log --oneline -10",
+]
+
+deny = [
+  "rm -rf /",
+  "sudo *",
+]
+
+[hooks]
+post_edit = [
+  "npm run lint",
+  "npm run typecheck",
+]

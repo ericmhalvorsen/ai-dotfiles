@@ -1,6 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "Claude Code settings - edit this file to customize permissions, hooks, and MCP servers",
   
   "permissions": {
     "allow": [
@@ -12,8 +11,7 @@
       "Bash(git log --oneline -10)",
       "Read(./package.json)",
       "Read(./README.md)",
-      "Read(./CLAUDE.md)",
-      "Read(./.ai/config.yaml)"
+      "Read(./AGENTS.md)"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -28,9 +26,7 @@
   "model": "claude-sonnet-4-5",
   
   "sandbox": {
-    "enabled": true,
-    "denyNetwork": false,
-    "denyFileWrite": false
+    "enabled": true
   },
   
   "hooks": {
@@ -44,9 +40,5 @@
         "condition": "test -f tsconfig.json"
       }
     ]
-  },
-  
-  "env": {
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "1"
   }
 }

@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+description: Core editor behavior and preferences
+---
+
+# Editor Preferences
+
+## Universal Constraints
+
+### Never Do
+- Modify .env files or config without explicit request
+- Delete files without confirmation
+- Skip error handling
+- Hardcode secrets
+
+### Always Do
+- Follow existing code patterns
+- Add tests for new features
+- Run linters after edits
+- Ask before destructive operations
+
+## Code Quality Gates
+
+Before completing:
+1. Run linter
+2. Run type checker  
+3. Run tests
+4. Verify no secrets in code
+
+## Response Style
+
+- Be concise
+- Show code first, explain if asked
+- Use proper code blocks
+- Reference AGENTS.md for context

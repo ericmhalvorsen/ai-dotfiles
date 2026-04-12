@@ -1,0 +1,25 @@
+servers:
+  # Fetch web pages
+  fetch:
+    type: http
+    url: https://mcp-fetch.example.com
+    
+  # Sequential thinking for complex problems
+  sequential-thinking:
+    type: local
+    command: npx
+    args: ["-y", "@anthropic-ai/mcp-sequentialthinking"]
+    
+  # File system access (use carefully)
+  filesystem:
+    type: local
+    command: npx
+    args: ["-y", "@anthropic-ai/mcp-filesystem", "{{PROJECT_ROOT}}"]
+    
+  # GitHub API (if needed)
+  # github:
+  #   type: local
+  #   command: npx
+  #   args: ["-y", "@github/mcp-server"]
+  #   env:
+  #     GITHUB_TOKEN: "{{GITHUB_TOKEN}}"

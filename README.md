@@ -1,160 +1,256 @@
 # ai-dotfiles
 
-> **Universal AI coding configuration**
->
-> Share commands, skills, and instructions across Claude Code, Cursor, GitHub Copilot, and OpenAI Codex.
+> **Unified AI coding configuration for Claude, Cursor, and Codex**
+> 
+> One skill definition. All agents. Zero duplication.
 
 ## The Problem
 
-Every AI coding tool uses different config locations:
-- **Claude Code**: `~/.claude/` + `CLAUDE.md`
-- **Cursor**: `.cursor/rules/*.mdc`
-- **GitHub Copilot**: `.github/copilot-instructions.md`
-- **OpenAI Codex**: `~/.codex/` + `AGENTS.md`
+You have 3 AI coding tools, each with different config locations and formats:
+- **Claude Code**: Skills in `.claude/skills/*/SKILL.md`
+- **Cursor**: Rules in `.cursor/rules/*.mdc`  
+- **OpenAI Codex**: Skills in `.codex/skills/`
 
-This repo provides a **single source of truth** that symlinks to all the right places.
+Add a skill to Claude? You have to manually copy/adapt it for Cursor and Codex. Update it? Do it 3 times.
+
+## The Solution
+
+Define once in `skills/`. The install script maps it everywhere:
+
+```
+skills/
+├── code-review/
+│   └── skill.md          ← You define here
+├── debugging/
+│   └── skill.md          ← You define here
+└── testing/
+    └── skill.md          ← You define here
+
+Install script creates:
+~/.claude/skills/         → skills/ (SKILL.md format)
+.cursor/rules/            → skills/ (.mdc format via smart symlinks)
+~/.codex/skills/          → skills/ (Codex format)
+```
 
 ## Quick Start
 
 ```bash
-# Install globally (recommended)
+# Global install (recommended)
 git clone https://github.com/YOUR_USERNAME/ai-dotfiles.git ~/.ai
 cd ~/.ai && ./install.sh
 
-# Or install in a specific project
+# Or project-specific
 git clone https://github.com/YOUR_USERNAME/ai-dotfiles.git .ai
 ./.ai/install.sh --local
 ```
 
-## What It Does
+## What Gets Installed
 
-Symlinks from this repo to every tool's config location:
+The install script intelligently maps unified definitions to each tool:
 
-```
-~/.claude/           → ~/.ai/claude/
-~/.codex/            → ~/.ai/codex/
-.cursor/rules/       → ~/.ai/cursor/rules/
-.github/             → ~/.ai/github/
-AGENTS.md            → ~/.ai/agents.md
-CLAUDE.md            → ~/.ai/claude.md
-```
-
-Edit once in `~/.ai/`, apply everywhere.
+| Unified Source | Claude | Cursor | Codex |
+|----------------|--------|--------|-------|
+| `skills/*/` | `~/.claude/skills/*/` | `.cursor/rules/*.mdc` | `~/.codex/skills/*/` |
+| `commands/*.md` | `~/.claude/commands/*.md` | (as rules) | `~/.codex/prompts/*.md` |
+| `mcp/servers.yaml` | `~/.claude/settings.json` | `.cursor/mcp.json` | `~/.codex/config.toml` |
+| `adapters/claude/settings.json` | `~/.claude/settings.json` | - | - |
+| `adapters/cursor/rules/` | - | `.cursor/rules/` | - |
+| `adapters/codex/config.toml` | - | - | `~/.codex/config.toml` |
 
 ## Directory Structure
 
 ```
 ~/.ai/
 ├── README.md
-├── install.sh
-├── shared/              # Common to all tools
-│   ├── skills/          # Reusable skills
-│   ├── commands/        # Slash commands
-│   └── guidelines/      # Coding standards
-├── claude/              # Claude Code specific
-│   ├── settings.json    # Permissions, hooks, MCP
-│   ├── skills/          # Claude-specific skills
-│   └── commands/        # Claude slash commands
-├── cursor/              # Cursor specific
-│   └── rules/           # .mdc rule files
-├── codex/               # Codex specific
-│   ├── config.toml      # Codex config (TOML!)
-│   ├── skills/          # Codex skills
-│   └── prompts/         # Codex prompts
-├── github/              # GitHub Copilot
-│   ├── copilot-instructions.md      # Main instructions
-│   └── instructions/                # Path-specific rules
-│       └── typescript.instructions.md
-├── agents.md            # Universal AGENTS.md (symlinked to AGENTS.md)
-└── claude.md            # Universal CLAUDE.md (symlinked to CLAUDE.md)
+├── install.sh              # Smart installer
+├── skills/                 # Universal skills (define once)
+│   ├── code-review/
+│   │   └── skill.md
+│   ├── debugging/
+│   │   └── skill.md
+│   └── testing/
+│       └── skill.md
+├── commands/               # Universal commands
+│   ├── commit.md
+│   └── test.md
+├── mcp/                    # Unified MCP configuration
+│   └── servers.yaml
+├── adapters/               # Tool-specific adapter configs
+│   ├── claude/
+│   │   ├── settings.json   # Claude-specific settings
+│   │   └── commands/       # Claude-only commands
+│   ├── cursor/
+│   │   └── rules/          # Cursor-only rules
+│   └── codex/
+│       ├── config.toml     # Codex-specific config
+│       └── prompts/        # Codex-only prompts
+└── AGENTS.md               # Universal instructions (all tools read this)
 ```
 
-## Supported Tools
+## Universal Skill Format
 
-| Tool | Global Config | Project Config | Status |
-|------|--------------|----------------|---------|
-| Claude Code | `~/.claude/` | `.claude/` | ✅ Full |
-| Cursor | `~/.cursor/` | `.cursor/rules/` | ✅ Full |
-| GitHub Copilot | `~/.github/` | `.github/` | ✅ Full |
-| OpenAI Codex | `~/.codex/` | `.codex/` | ✅ Full |
-| Windsurf | `~/.windsurf/` | `.windsurf/` | ✅ Full |
+Skills use a common markdown format with YAML frontmatter that works across all tools:
 
-## File Formats
+```markdown
+---
+name: code-review
+description: Review code for quality and best practices
+tags: [review, quality]
+---
 
-### Claude Code
-- **Settings**: `.claude/settings.json` (JSON with schema)
-- **Instructions**: `CLAUDE.md` (Markdown)
-- **Skills**: `.claude/skills/*/SKILL.md`
-- **Commands**: `.claude/commands/*.md`
+# Code Review Skill
 
-### Cursor
-- **Rules**: `.cursor/rules/*.mdc` (Markdown with YAML frontmatter)
-- **Format**:
-  ```yaml
-  ---
-  alwaysApply: true
-  description: Rule description
-  globs: ["*.ts", "*.tsx"]
-  ---
-  # Rule content
-  ```
+## When to Use
+Use this skill when reviewing code for:
+- Logic errors
+- Security issues  
+- Performance problems
+- Maintainability concerns
 
-### GitHub Copilot
-- **Main**: `.github/copilot-instructions.md` (Markdown)
-- **Path-specific**: `.github/instructions/*.instructions.md`
-- **Format**:
-  ```yaml
-  ---
-  applyTo: "src/**/*.ts"
-  ---
-  # Rule content
-  ```
+## Process
+1. Read the code carefully
+2. Check against project standards
+3. Identify issues with severity (critical/warning/suggestion)
+4. Provide specific, actionable feedback
 
-### OpenAI Codex
-- **Config**: `.codex/config.toml` (TOML, not JSON!)
-- **Instructions**: `AGENTS.md` (Markdown)
-- **Skills**: `.codex/skills/` (various formats)
+## Output Format
+```
+[CRITICAL] Issue description
+[WARNING] Issue description  
+[SUGGESTION] Improvement idea
+```
+```
 
-## Customization
+The install script handles the rest:
+- **Claude**: Creates `~/.claude/skills/code-review/SKILL.md`
+- **Cursor**: Creates `.cursor/rules/code-review.mdc` (symlink with extension handling)
+- **Codex**: Creates `~/.codex/skills/code-review/skill.md`
 
-### Global vs Project
+## MCP Server Management
 
-**Global** (`~/.ai/` + `install.sh`):
-- Applies to all projects
-- Use for personal preferences
-- Stored in your home directory
+Define MCP servers once in `mcp/servers.yaml`:
 
-**Project** (clone into `.ai/` + `install.sh --local`):
-- Applies to specific project only
-- Use for team standards
-- Committed to git
+```yaml
+servers:
+  fetch:
+    type: http
+    url: https://mcp-fetch.example.com
+    
+  sequential-thinking:
+    type: local
+    command: npx
+    args: [-y, @anthropic-ai/mcp-sequentialthinking]
+```
 
-### Personal Overrides
+The install script converts this to each tool's format:
+- **Claude**: Updates `settings.json` with MCP servers
+- **Cursor**: Creates `.cursor/mcp.json`
+- **Codex**: Updates `config.toml` with MCP servers
 
-Create `.local` files that are gitignored:
-- `claude/settings.local.json`
-- `codex/config.local.toml`
-- `cursor/rules/personal.local.mdc`
+## Commands
 
-### Adding New Skills
+### Global Install
+```bash
+./install.sh
+```
 
-1. Create in `shared/skills/my-skill/SKILL.md`
-2. Run `./install.sh` to symlink everywhere
-3. Available in all tools immediately
+Creates symlinks in your home directory:
+- `~/.claude/` → `~/.ai/adapters/claude/`
+- `~/.claude/skills/` → `~/.ai/skills/`  
+- `~/.codex/` → `~/.ai/adapters/codex/`
+- `~/.codex/skills/` → `~/.ai/skills/`
+- `.cursor/rules/` → `~/.ai/skills/` (with .mdc extension mapping)
+
+### Project Install
+```bash
+./install.sh --local
+```
+
+Creates symlinks in current project:
+- `./.claude/` → `./.ai/adapters/claude/`
+- `./.cursor/rules/` → `./.ai/skills/`
+- `./.codex/` → `./.ai/adapters/codex/`
+- `./AGENTS.md` → `./.ai/AGENTS.md`
+
+### Force Overwrite
+```bash
+./install.sh --force
+```
+
+Backs up existing configs and replaces with symlinks.
+
+## Adding a New Skill
+
+1. Create skill definition:
+```bash
+mkdir -p ~/.ai/skills/my-skill
+vim ~/.ai/skills/my-skill/skill.md
+```
+
+2. Re-run installer to propagate:
+```bash
+cd ~/.ai && ./install.sh
+```
+
+3. Available immediately in all tools!
+
+## How It Works
+
+The install script uses **symlinks with extension mapping**:
+
+```bash
+# For tools that use same content, different extension:
+ln -s ~/.ai/skills/code-review/skill.md ~/.claude/skills/code-review/SKILL.md
+ln -s ~/.ai/skills/code-review/skill.md .cursor/rules/code-review.mdc
+ln -s ~/.ai/skills/code-review/skill.md ~/.codex/skills/code-review/skill.md
+```
+
+Same file content, three locations, three tools. Edit once, apply everywhere.
+
+## Tool-Specific Overrides
+
+Need something specific to one tool? Use the adapters:
+
+```bash
+# Claude-only setting
+vim ~/.ai/adapters/claude/settings.json
+
+# Cursor-only rule  
+vim ~/.ai/adapters/cursor/rules/editor-preferences.mdc
+
+# Codex-only config
+vim ~/.ai/adapters/codex/config.toml
+```
 
 ## Best Practices
 
-1. **Keep shared/ for universal stuff** - Language-agnostic guidelines
-2. **Use tool-specific folders** for format-specific features
-3. **Don't duplicate** - One source of truth per concept
-4. **Version control** - Track changes to your AI standards
-5. **Test changes** - Verify rules work in each tool
+1. **Put universal stuff in `skills/` and `commands/`** - Works everywhere
+2. **Put tool-specific stuff in `adapters/<tool>/`** - Only that tool sees it
+3. **Use the install script** - Don't manually create symlinks
+4. **Version control your dotfiles** - Track changes to AI standards
+5. **Test in each tool** - Verify skills work as expected
+
+## Troubleshooting
+
+### "File exists" errors
+Use `--force` to backup and overwrite:
+```bash
+./install.sh --force
+```
+
+### Skills not showing up
+1. Check symlink: `ls -la ~/.claude/skills/`
+2. Verify file format is valid markdown
+3. Restart the AI tool
+
+### Cursor not loading .mdc files
+Cursor requires `.mdc` extension. The install script handles this automatically.
 
 ## Inspired By
 
 - [notdp/.dotfiles](https://github.com/notdp/.dotfiles) - Multi-agent symlink approach
 - [wdonofrio/ai-config](https://github.com/wdonofrio/ai-config) - Shared/tool-specific split
-- [dotagent](https://github.com/johnlindquist/dotagent) - Universal format conversion
+- [universal-ai-config](https://github.com/fabis94/universal-ai-config) - Format conversion concept
 
 ## License
 
