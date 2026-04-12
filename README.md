@@ -7,7 +7,7 @@
 ## The Problem
 
 You have 3 AI coding tools, each with different config locations and formats:
-- **Claude Code**: Skills in `.claude/skills/*/SKILL.md`
+- **Claude Code**: Skills in `.claude/skills/*/SKILL.md`, rules in `.claude/rules/`
 - **Cursor**: Rules in `.cursor/rules/*.mdc`  
 - **OpenAI Codex**: Skills in `.codex/skills/`
 
@@ -15,20 +15,25 @@ Add a skill to Claude? You have to manually copy/adapt it for Cursor and Codex. 
 
 ## The Solution
 
-Define once in `skills/`. The install script maps it everywhere:
+Define once in `skills/` and `rules/`. The install script maps it everywhere:
 
 ```
 skills/
+├── devils-advocate/
+│   └── skill.md          ← Detailed skill with protocols & intensity levels
 ├── code-review/
-│   └── skill.md          ← You define here
-├── debugging/
-│   └── skill.md          ← You define here
-└── testing/
-    └── skill.md          ← You define here
+│   └── skill.md          ← Multi-phase analysis skill
+└── debugging/
+    └── skill.md          ← Systematic debugging workflow
+
+rules/
+├── caveman.md            ← Communication style with intensity levels
+└── core.md               ← Always-on constraints
 
 Install script creates:
 ~/.claude/skills/         → skills/ (SKILL.md format)
-.cursor/rules/            → skills/ (.mdc format via smart symlinks)
+~/.claude/rules/          → rules/ (rule format)
+.cursor/rules/            → skills/ + rules/ (.mdc format)
 ~/.codex/skills/          → skills/ (Codex format)
 ```
 

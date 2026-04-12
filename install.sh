@@ -241,6 +241,17 @@ if [ -d "$SCRIPT_DIR/commands" ]; then
   done
 fi
 
+# Install rules for Claude
+if [ -d "$SCRIPT_DIR/rules" ]; then
+  mkdir -p "$CLAUDE_DIR/rules"
+  for rule_file in "$SCRIPT_DIR/rules"/*.md; do
+    if [ -f "$rule_file" ]; then
+      rule_name=$(basename "$rule_file")
+      hardlink "$rule_file" "$CLAUDE_DIR/rules/$rule_name" "  Rule: ${rule_name%.md}"
+    fi
+  done
+fi
+
 # Convert MCP config
 convert_mcp_claude "$CLAUDE_DIR/settings.json"
 
@@ -268,6 +279,19 @@ if [ -d "$SCRIPT_DIR/skills" ]; then
         echo -e "${GREEN}  ✓${NC} Rule: $skill_name.mdc"
         INSTALLED+=("cursor:$skill_name")
       fi
+    fi
+  done
+fi
+
+# Install rules as .mdc
+if [ -d "$SCRIPT_DIR/rules" ]; then
+  mkdir -p "$CURSOR_DIR/rules"
+  for rule_file in "$SCRIPT_DIR/rules"/*.md; do
+    if [ -f "$rule_file" ]; then
+      rule_name=$(basename "$rule_file" .md)
+      ln -sf "$rule_file" "$CURSOR_DIR/rules/${rule_name}.mdc" 2>/dev/null || true
+      echo -e "${GREEN}  ✓${NC} Rule: ${rule_name}.mdc"
+      INSTALLED+=("cursor:$rule_name")
     fi
   done
 fi
