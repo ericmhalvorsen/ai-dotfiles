@@ -1,6 +1,7 @@
 #!/bin/bash
 # ai-dotfiles install script
-# Maps unified skills/commands to each tool's specific format and location
+# Source of truth: ~/.ai/
+# Symlinks to: ~/.opencode/skills, ~/.claude/skills, and tool-specific locations
 
 set -e
 
@@ -15,16 +16,11 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Parse arguments
-LOCAL_INSTALL=false
 FORCE=false
 VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --local)
-      LOCAL_INSTALL=true
-      shift
-      ;;
     --force)
       FORCE=true
       shift
@@ -37,17 +33,16 @@ while [[ $# -gt 0 ]]; do
       cat << 'EOF'
 Usage: ./install.sh [OPTIONS]
 
-Install unified AI configuration across Claude Code, Cursor, and Codex.
+Install unified AI configuration. Source of truth is ~/.ai/
+Symlinks skills to ~/.opencode/skills and ~/.claude/skills
 
 Options:
-  --local      Install in current project (not global)
   --force      Overwrite existing configs without prompting
   --verbose    Show detailed output
   --help       Show this help message
 
 Examples:
-  ./install.sh              # Global install
-  ./install.sh --local      # Project install
+  ./install.sh              # Standard install
   ./install.sh --force      # Overwrite existing
 EOF
       exit 0
@@ -66,25 +61,19 @@ log() {
   fi
 }
 
-# Determine target directories
-if [ "$LOCAL_INSTALL" = true ]; then
-  TARGET_BASE="$(pwd)"
-  echo -e "${BLUE}🔧 Project-level installation${NC}"
-else
-  TARGET_BASE="$HOME"
-  echo -e "${BLUE}🌐 Global installation${NC}"
-fi
+AI_DIR="$HOME/.ai"
 
+echo -e "${BLUE}🌐 ai-dotfiles installation${NC}"
 echo -e "Source: ${GREEN}$SCRIPT_DIR${NC}"
-echo -e "Target: ${GREEN}$TARGET_BASE${NC}"
+echo -e "Target: ${GREEN}$AI_DIR${NC}"
 echo ""
 
 # Track operations
 INSTALLED=()
 SKIPPED=()
-CONVERTED=()
 
-# Helper: Backup existingackup_if_exists() {
+# Helper: Backup existing
+backup_if_exists() {
   local target="$1"
   if [ -e "$target" ] && [ ! -L "$target" ]; then
     local backup="${target}.backup.$(date +%Y%m%d_%H%M%S)"
@@ -123,232 +112,107 @@ symlink() {
   INSTALLED+=("$name")
 }
 
-# Helper: Create hard link (for same content, different location)
-hardlink() {
-  local src="$1"
-  local dst="$2"
-  local name="$3"
-  
-  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    if [ "$FORCE" = true ]; then
-      backup_if_exists "$dst"
-    else
-      echo -e "${YELLOW}  ⊘ $name (exists, use --force)${NC}"
-      SKIPPED+=("$name")
-      return 0
-    fi
-  fi
-  
-  mkdir -p "$(dirname "$dst")"
-  ln "$src" "$dst" 2>/dev/null || ln -s "$src" "$dst"
-  echo -e "${GREEN}  ✓${NC} $name"
-  INSTALLED+=("$name")
-}
+# Step 1: Copy ai-dotfiles to ~/.ai
+echo -e "${BLUE}Installing to ~/.ai...${NC}"
 
-# Convert MCP servers.yaml to Claude settings.json format
-convert_mcp_claude() {
-  local yaml_file="$SCRIPT_DIR/mcp/servers.yaml"
-  local settings_file="$1"
-  
-  if [ ! -f "$yaml_file" ]; then
-    return 0
+if [ -d "$AI_DIR" ] && [ ! -L "$AI_DIR" ]; then
+  if [ "$FORCE" = true ]; then
+    backup_if_exists "$AI_DIR"
+  else
+    echo -e "${YELLOW}~/.ai exists. Use --force to replace.${NC}"
+    exit 1
   fi
-  
-  # Simple YAML to JSON conversion for MCP servers
-  # This is a basic implementation - for complex cases, use yq
-  if command -v yq &> /dev/null; then
-    yq -o=json "$yaml_file" > /tmp/mcp_servers.json
-    # Merge into settings.json
-    if [ -f "$settings_file" ]; then
-      # Read existing settings and merge MCP
-      cat "$settings_file" | jq --slurpfile mcp /tmp/mcp_servers.json '. + {mcpServers: $mcp[0].servers}' > /tmp/settings_new.json
-      mv /tmp/settings_new.json "$settings_file"
-    fi
-  fi
-}
-
-# Convert MCP servers.yaml to Cursor mcp.json format
-convert_mcp_cursor() {
-  local yaml_file="$SCRIPT_DIR/mcp/servers.yaml"
-  local mcp_file="$1"
-  
-  if [ ! -f "$yaml_file" ]; then
-    return 0
-  fi
-  
-  if command -v yq &> /dev/null; then
-    yq -o=json "$yaml_file" > "$mcp_file"
-    echo -e "${GREEN}  ✓${NC} MCP config (Cursor)"
-    CONVERTED+=("MCP Cursor")
-  fi
-}
-
-# Convert MCP servers.yaml to Codex config.toml format
-convert_mcp_codex() {
-  local yaml_file="$SCRIPT_DIR/mcp/servers.yaml"
-  local config_file="$1"
-  
-  if [ ! -f "$yaml_file" ]; then
-    return 0
-  fi
-  
-  # Append MCP section to config.toml
-  if [ -f "$yaml_file" ]; then
-    echo "" >> "$config_file"
-    echo "# MCP Servers (auto-converted from mcp/servers.yaml)" >> "$config_file"
-    echo "[mcp]" >> "$config_file"
-    
-    # Simple conversion - extract server names and commands
-    grep -A 5 "^  [a-z-]*:" "$yaml_file" | grep -E "(type:|command:|args:)" | sed 's/^  //' >> "$config_file"
-    
-    echo -e "${GREEN}  ✓${NC} MCP config (Codex)"
-    CONVERTED+=("MCP Codex")
-  fi
-}
-
-echo -e "${BLUE}Installing Claude Code configuration...${NC}"
-
-CLAUDE_DIR="$TARGET_BASE/.claude"
-if [ "$LOCAL_INSTALL" = true ]; then
-  symlink "$SCRIPT_DIR/adapters/claude" "$CLAUDE_DIR" "Claude config"
-  symlink "$SCRIPT_DIR/AGENTS.md" "$TARGET_BASE/CLAUDE.md" "CLAUDE.md"
-else
-  symlink "$SCRIPT_DIR/adapters/claude" "$CLAUDE_DIR" "~/.claude"
-  symlink "$SCRIPT_DIR/AGENTS.md" "$CLAUDE_DIR/CLAUDE.md" "~/.claude/CLAUDE.md"
 fi
 
-# Install skills for Claude (directory structure)
-if [ -d "$SCRIPT_DIR/skills" ]; then
-  for skill_dir in "$SCRIPT_DIR/skills"/*; do
-    if [ -d "$skill_dir" ]; then
-      skill_name=$(basename "$skill_dir")
-      if [ -f "$skill_dir/skill.md" ]; then
-        mkdir -p "$CLAUDE_DIR/skills/$skill_name"
-        hardlink "$skill_dir/skill.md" "$CLAUDE_DIR/skills/$skill_name/SKILL.md" "  Skill: $skill_name"
-      fi
-    fi
-  done
-fi
+# Copy the entire ai-dotfiles structure to ~/.ai
+mkdir -p "$AI_DIR"
+cp -r "$SCRIPT_DIR/skills" "$AI_DIR/"
+cp -r "$SCRIPT_DIR/commands" "$AI_DIR/" 2>/dev/null || true
+cp -r "$SCRIPT_DIR/rules" "$AI_DIR/" 2>/dev/null || true
+cp -r "$SCRIPT_DIR/mcp" "$AI_DIR/" 2>/dev/null || true
+cp -r "$SCRIPT_DIR/adapters" "$AI_DIR/" 2>/dev/null || true
 
-# Install commands for Claude
-if [ -d "$SCRIPT_DIR/commands" ]; then
-  mkdir -p "$CLAUDE_DIR/commands"
-  for cmd_file in "$SCRIPT_DIR/commands"/*.md; do
-    if [ -f "$cmd_file" ]; then
-      cmd_name=$(basename "$cmd_file")
-      hardlink "$cmd_file" "$CLAUDE_DIR/commands/$cmd_name" "  Command: ${cmd_name%.md}"
-    fi
-  done
-fi
+# Copy AGENTS.md and add installation metadata
+cp "$SCRIPT_DIR/AGENTS.md" "$AI_DIR/AGENTS.md"
+INSTALL_NOTE="<!-- Installed from $SCRIPT_DIR with command: $0 $@ on $(date -Iseconds) -->"
+# Remove any existing install note, then add new one at the top
+sed -i '/^<!-- Installed from/d' "$AI_DIR/AGENTS.md"
+sed -i "1i\\$INSTALL_NOTE" "$AI_DIR/AGENTS.md"
 
-# Install rules for Claude
-if [ -d "$SCRIPT_DIR/rules" ]; then
-  mkdir -p "$CLAUDE_DIR/rules"
-  for rule_file in "$SCRIPT_DIR/rules"/*.md; do
-    if [ -f "$rule_file" ]; then
-      rule_name=$(basename "$rule_file")
-      hardlink "$rule_file" "$CLAUDE_DIR/rules/$rule_name" "  Rule: ${rule_name%.md}"
-    fi
-  done
-fi
+echo -e "${GREEN}  ✓${NC} Copied ai-dotfiles to ~/.ai"
+INSTALLED+=("~/.ai")
 
-# Convert MCP config
-convert_mcp_claude "$CLAUDE_DIR/settings.json"
-
+# Step 2: Symlink skills to ~/.opencode/skills
 echo ""
-echo -e "${BLUE}Installing Cursor configuration...${NC}"
+echo -e "${BLUE}Symlinking to OpenCode...${NC}"
 
-CURSOR_DIR="$TARGET_BASE/.cursor"
-mkdir -p "$CURSOR_DIR"
+OPENCODE_DIR="$HOME/.opencode"
+mkdir -p "$OPENCODE_DIR"
+symlink "$AI_DIR/skills" "$OPENCODE_DIR/skills" "~/.opencode/skills"
 
-# Install adapter rules
-if [ -d "$SCRIPT_DIR/adapters/cursor/rules" ]; then
-  symlink "$SCRIPT_DIR/adapters/cursor/rules" "$CURSOR_DIR/rules" "Cursor rules"
-fi
-
-# Install skills as .mdc rules
-if [ -d "$SCRIPT_DIR/skills" ]; then
-  mkdir -p "$CURSOR_DIR/rules"
-  for skill_dir in "$SCRIPT_DIR/skills"/*; do
-    if [ -d "$skill_dir" ]; then
-      skill_name=$(basename "$skill_dir")
-      if [ -f "$skill_dir/skill.md" ]; then
-        # Create .mdc version (symlink with different extension)
-        # Cursor uses .mdc extension
-        ln -sf "$skill_dir/skill.md" "$CURSOR_DIR/rules/${skill_name}.mdc" 2>/dev/null || true
-        echo -e "${GREEN}  ✓${NC} Rule: $skill_name.mdc"
-        INSTALLED+=("cursor:$skill_name")
-      fi
-    fi
-  done
-fi
-
-# Install rules as .mdc
-if [ -d "$SCRIPT_DIR/rules" ]; then
-  mkdir -p "$CURSOR_DIR/rules"
-  for rule_file in "$SCRIPT_DIR/rules"/*.md; do
-    if [ -f "$rule_file" ]; then
-      rule_name=$(basename "$rule_file" .md)
-      ln -sf "$rule_file" "$CURSOR_DIR/rules/${rule_name}.mdc" 2>/dev/null || true
-      echo -e "${GREEN}  ✓${NC} Rule: ${rule_name}.mdc"
-      INSTALLED+=("cursor:$rule_name")
-    fi
-  done
-fi
-
-# Convert MCP config
-convert_mcp_cursor "$CURSOR_DIR/mcp.json"
-
+# Step 3: Symlink skills to ~/.claude/skills
 echo ""
-echo -e "${BLUE}Installing OpenAI Codex configuration...${NC}"
+echo -e "${BLUE}Symlinking to Claude Code...${NC}"
 
-CODEX_DIR="$TARGET_BASE/.codex"
-if [ "$LOCAL_INSTALL" = true ]; then
-  symlink "$SCRIPT_DIR/adapters/codex" "$CODEX_DIR" "Codex config"
-  symlink "$SCRIPT_DIR/AGENTS.md" "$TARGET_BASE/AGENTS.md" "AGENTS.md"
-else
-  symlink "$SCRIPT_DIR/adapters/codex" "$CODEX_DIR" "~/.codex"
-  symlink "$SCRIPT_DIR/AGENTS.md" "$CODEX_DIR/AGENTS.md" "~/.codex/AGENTS.md"
-fi
+CLAUDE_DIR="$HOME/.claude"
+mkdir -p "$CLAUDE_DIR"
+symlink "$AI_DIR/skills" "$CLAUDE_DIR/skills" "~/.claude/skills"
 
-# Install skills for Codex
-if [ -d "$SCRIPT_DIR/skills" ]; then
-  for skill_dir in "$SCRIPT_DIR/skills"/*; do
-    if [ -d "$skill_dir" ]; then
-      skill_name=$(basename "$skill_dir")
-      if [ -f "$skill_dir/skill.md" ]; then
-        mkdir -p "$CODEX_DIR/skills/$skill_name"
-        hardlink "$skill_dir/skill.md" "$CODEX_DIR/skills/$skill_name/skill.md" "  Skill: $skill_name"
-      fi
-    fi
-  done
-fi
-
-# Install commands as prompts for Codex
-if [ -d "$SCRIPT_DIR/commands" ]; then
-  mkdir -p "$CODEX_DIR/prompts"
-  for cmd_file in "$SCRIPT_DIR/commands"/*.md; do
-    if [ -f "$cmd_file" ]; then
-      cmd_name=$(basename "$cmd_file")
-      hardlink "$cmd_file" "$CODEX_DIR/prompts/$cmd_name" "  Prompt: ${cmd_name%.md}"
-    fi
-  done
-fi
-
-# Convert MCP config
-convert_mcp_codex "$CODEX_DIR/config.toml"
-
+# Step 4: Symlink AGENTS.md to ~/.claude/CLAUDE.md (same content, no duplication)
 echo ""
-echo -e "${BLUE}Installing Windsurf/OpenCode (via AGENTS.md)...${NC}"
-# These tools read AGENTS.md automatically
-if [ "$LOCAL_INSTALL" = true ]; then
-  if [ ! -e "$TARGET_BASE/AGENTS.md" ]; then
-    symlink "$SCRIPT_DIR/AGENTS.md" "$TARGET_BASE/AGENTS.md" "AGENTS.md"
+echo -e "${BLUE}Installing Claude Code AGENTS.md...${NC}"
+
+# CLAUDE.md is a symlink to AGENTS.md - always in sync, no duplication
+symlink "$AI_DIR/AGENTS.md" "$CLAUDE_DIR/CLAUDE.md" "~/.claude/CLAUDE.md (-> AGENTS.md)"
+
+# Step 5: Install to Cursor (if exists)
+if [ -d "$HOME/.cursor" ]; then
+  echo ""
+  echo -e "${BLUE}Installing Cursor configuration...${NC}"
+  
+  CURSOR_DIR="$HOME/.cursor"
+  
+  # Install skills as .mdc rules
+  if [ -d "$AI_DIR/skills" ]; then
+    mkdir -p "$CURSOR_DIR/rules"
+    for skill_dir in "$AI_DIR/skills"/*; do
+      if [ -d "$skill_dir" ]; then
+        skill_name=$(basename "$skill_dir")
+        if [ -f "$skill_dir/skill.md" ]; then
+          ln -sf "$skill_dir/skill.md" "$CURSOR_DIR/rules/${skill_name}.mdc" 2>/dev/null || true
+          echo -e "${GREEN}  ✓${NC} Rule: $skill_name.mdc"
+          INSTALLED+=("cursor:$skill_name")
+        fi
+      fi
+    done
   fi
 fi
-echo -e "${GREEN}  ✓${NC} AGENTS.md (universal)"
-INSTALLED+=("AGENTS.md")
 
+# Step 6: Install to Codex (if exists)
+if [ -d "$HOME/.codex" ]; then
+  echo ""
+  echo -e "${BLUE}Installing Codex configuration...${NC}"
+  
+  CODEX_DIR="$HOME/.codex"
+  symlink "$AI_DIR/AGENTS.md" "$CODEX_DIR/AGENTS.md" "~/.codex/AGENTS.md"
+  
+  # Install skills
+  if [ -d "$AI_DIR/skills" ]; then
+    for skill_dir in "$AI_DIR/skills"/*; do
+      if [ -d "$skill_dir" ]; then
+        skill_name=$(basename "$skill_dir")
+        if [ -f "$skill_dir/skill.md" ]; then
+          mkdir -p "$CODEX_DIR/skills/$skill_name"
+          ln -sf "$skill_dir/skill.md" "$CODEX_DIR/skills/$skill_name/skill.md" 2>/dev/null || true
+          echo -e "${GREEN}  ✓${NC} Skill: $skill_name"
+          INSTALLED+=("codex:$skill_name")
+        fi
+      fi
+    done
+  fi
+fi
+
+# Summary
 echo ""
 echo -e "${BLUE}========================${NC}"
 echo -e "${GREEN}Installation complete!${NC}"
@@ -362,14 +226,6 @@ if [ ${#INSTALLED[@]} -gt 0 ]; then
   echo ""
 fi
 
-if [ ${#CONVERTED[@]} -gt 0 ]; then
-  echo -e "${GREEN}Converted (${#CONVERTED[@]} items):${NC}"
-  for item in "${CONVERTED[@]}"; do
-    echo "  ✓ $item"
-  done
-  echo ""
-fi
-
 if [ ${#SKIPPED[@]} -gt 0 ]; then
   echo -e "${YELLOW}Skipped (${#SKIPPED[@]} items):${NC}"
   for item in "${SKIPPED[@]}"; do
@@ -378,19 +234,19 @@ if [ ${#SKIPPED[@]} -gt 0 ]; then
   echo ""
 fi
 
-echo -e "${BLUE}Next steps:${NC}"
-if [ "$LOCAL_INSTALL" = true ]; then
-  echo "  • Skills available in: ./.claude/skills/, ./.cursor/rules/, ./.codex/skills/"
-  echo "  • Edit files in ./.ai/skills/ to update all tools"
-  echo "  • Commit ./.ai/ directory to git"
-else
-  echo "  • Skills available in: ~/.claude/skills/, .cursor/rules/, ~/.codex/skills/"
-  echo "  • Edit files in ~/.ai/skills/ to update all tools"
-  echo "  • Changes apply globally to all projects"
-fi
+echo -e "${BLUE}Structure:${NC}"
+echo "  ~/.ai/                    # Source of truth"
+echo "  ├── AGENTS.md             # Universal agent instructions"
+echo "  ├── skills/               # All skills"
+echo "  ├── commands/             # Slash commands"
+echo "  └── rules/                # Coding rules"
 echo ""
-echo -e "${BLUE}To add a new skill:${NC}"
-echo "  1. Create: mkdir ~/.ai/skills/my-skill && vim ~/.ai/skills/my-skill/skill.md"
-echo "  2. Re-run: cd ~/.ai && ./install.sh"
-echo "  3. Available immediately in Claude, Cursor, and Codex!"
+echo "  ~/.opencode/skills -> ~/.ai/skills"
+echo "  ~/.claude/skills -> ~/.ai/skills"
+echo ""
+
+echo -e "${BLUE}Next steps:${NC}"
+echo "  • Edit files in ~/.ai/ to update all tools"
+echo "  • Changes apply globally to all projects"
+echo "  • Run ./install.sh again after adding new skills"
 echo ""

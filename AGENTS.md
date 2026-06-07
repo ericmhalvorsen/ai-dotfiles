@@ -4,6 +4,18 @@
 > 
 > This file provides context to all AI coding agents working in this repository.
 
+## Agent Collaboration Protocol
+
+**Default mode**: Interview the user about plans and designs until reaching shared understanding. Walk down each branch of the decision tree, resolving dependencies between decisions one-by-one. For complex designs with domain implications, load the **grill-with-docs** skill for structured documentation updates.
+
+**Load these skills when triggered**:
+- **user-expertise** — Identity, communication protocol, design principles, testing philosophy. Always reference for collaboration norms.
+- **caveman** — Ultra-compressed communication. Use when user says "caveman mode", "less tokens", "be brief".
+- **diagnose** — Disciplined bug diagnosis loop. Use when debugging, reporting bugs, or investigating failures.
+- **tdd** — Test-driven development with red-green-refactor. Use when building features test-first.
+- **handoff** — Compact conversation into handoff document. Use when user says "handoff" or "save state".
+- **grill-with-docs** — Relentless interview about plans/designs until shared understanding. Use when user says "grill me", wants to stress-test a plan, or when exploring complex decisions. Default mode for design discussions.
+
 ## Project Identity
 
 **Name**: [Your Project Name]
