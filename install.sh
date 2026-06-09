@@ -124,6 +124,14 @@ if [ -d "$AI_DIR" ] && [ ! -L "$AI_DIR" ]; then
   fi
 fi
 
+# Initialize submodules if needed
+if [ -f "$SCRIPT_DIR/.gitmodules" ]; then
+  echo -e "${BLUE}Initializing submodules...${NC}"
+  cd "$SCRIPT_DIR"
+  git submodule update --init --recursive 2>/dev/null || true
+  cd - > /dev/null
+fi
+
 # Copy the entire ai-dotfiles structure to ~/.ai
 mkdir -p "$AI_DIR"
 cp -r "$SCRIPT_DIR/skills" "$AI_DIR/"

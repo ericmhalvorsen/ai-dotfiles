@@ -28,6 +28,7 @@ caveman - compressed communication mode
 diagnose - bug diagnosis loop
 grill-with-docs - interview about designs until shared understanding
 handoff - compact conversation for session handoff
+last30days - research any topic across reddit, x, youtube, hn, polymarket (submodule)
 tdd - test-driven development workflow
 user-expertise - collaboration protocol and design principles
 

@@ -15,6 +15,7 @@
 - **tdd** — Test-driven development with red-green-refactor. Use when building features test-first.
 - **handoff** — Compact conversation into handoff document. Use when user says "handoff" or "save state".
 - **grill-with-docs** — Relentless interview about plans/designs until shared understanding. Use when user says "grill me", wants to stress-test a plan, or when exploring complex decisions. Default mode for design discussions.
+- **last30days** — Research any topic across Reddit, X, YouTube, HN, Polymarket. Use when user says "last30days", wants current research, or needs to understand what people are saying about something right now.
 
 ## Project Identity
 
