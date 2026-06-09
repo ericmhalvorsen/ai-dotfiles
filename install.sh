@@ -99,12 +99,7 @@ detect_tools() {
     tools+=("codex")
   fi
   
-  # Antigravity
-  if command -v antigravity &> /dev/null; then
-    tools+=("antigravity")
-  fi
-  
-  # Hermes (optional)
+  # Hermes
   if [ -d "$HOME/.hermes" ] || command -v hermes &> /dev/null; then
     tools+=("hermes")
   fi
@@ -363,17 +358,6 @@ for tool in "${SELECTED_TOOLS[@]}"; do
           fi
         done
       fi
-      ;;
-      
-    antigravity)
-      echo ""
-      echo -e "${BLUE}Installing to Antigravity...${NC}"
-      
-      # Antigravity uses similar structure to Claude
-      ANTIGRAVITY_DIR="$HOME/.antigravity"
-      mkdir -p "$ANTIGRAVITY_DIR"
-      symlink "$AI_DIR/skills" "$ANTIGRAVITY_DIR/skills" "~/.antigravity/skills"
-      symlink "$AI_DIR/AGENTS.md" "$ANTIGRAVITY_DIR/AGENTS.md" "~/.antigravity/AGENTS.md"
       ;;
       
     hermes)
