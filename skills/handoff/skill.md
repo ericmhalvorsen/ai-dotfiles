@@ -2,8 +2,10 @@
 name: handoff
 description: >
   Compact the current conversation into a handoff document for another agent
-  to pick up. Use when user says "handoff", "save state", "compact this",
-  or wants to continue work in a new session.
+  to pick up. Auto-activate when: (1) user says "handoff", "save state", "compact this",
+  (2) conversation exceeds ~50 messages or context window is filling, (3) user mentions
+  switching sessions, models, or agents, (4) work is being paused and will resume later,
+  (5) complex multi-step work has been completed and needs documentation.
 ---
 
 # Handoff

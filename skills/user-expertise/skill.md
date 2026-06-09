@@ -2,7 +2,9 @@
 name: UserExpertise
 description: >
   Identity & authority, communication protocol, operational rules,
-  and success metrics for collaborating with the user.
+  and success metrics for collaborating with the user. ALWAYS AUTOLOAD.
+  This is the base protocol for all interactions. Defines collaboration norms,
+  communication style, design principles, and testing philosophy.
 ---
 
 # User Expertise
