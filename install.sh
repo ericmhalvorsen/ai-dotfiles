@@ -135,7 +135,6 @@ fi
 # Copy the entire ai-dotfiles structure to ~/.ai
 mkdir -p "$AI_DIR"
 cp -r "$SCRIPT_DIR/skills" "$AI_DIR/"
-cp -r "$SCRIPT_DIR/commands" "$AI_DIR/" 2>/dev/null || true
 cp -r "$SCRIPT_DIR/rules" "$AI_DIR/" 2>/dev/null || true
 cp -r "$SCRIPT_DIR/mcp" "$AI_DIR/" 2>/dev/null || true
 cp -r "$SCRIPT_DIR/adapters" "$AI_DIR/" 2>/dev/null || true
